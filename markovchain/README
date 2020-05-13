@@ -1,0 +1,46 @@
+This directory contains the code and associated data files for the thesis
+Detecting Partisan Gerrymandering through Mathematical Analysis: A Case Study of South Carolina
+by Anna Marie Vagnozzi.
+
+The most up-to-date versions of the code and data files can be found at:
+https://github.com/vagnozzia408/gerrymandering_public
+
+This directory contains the files as they existed during the time of analysis for the study presented.. 
+
+
+This program runs the sqrt(ep) test for redistriciting Markov Chains on the Congressional Districtings of the Commonwealth of Pennsylvania.
+
+To install, type
+make
+
+then
+sudo make install
+
+
+The program requires as input one of the included files: InputPA10.txt, InputPA18.txt, InputSCCong.txt, InputSCSen.txt, InputSCHouse.txt. These input text files are described in Chapter 3 of the thesis.
+
+A simple run of the program is then
+chain -f InputSCCong.txt -n 22 --median_mean --BG_modified
+
+This runs the chain for 2^22 steps, with no constraints other than that districts are contiguous and simply connected, and with the default population difference threshold (2%).  It outputs outlier and significance with respect to the metrics median-mean and variable geometric bias.
+
+(Note that in the code, BG_modified refers to the geometric bias measure under the variable partisan swing assumption.
+The variable partisan swing assumption was initially referred to as the "modified partisan swing assumption" in earlier drafts of this thesis, and changed after the code for the Markov chain had begun running.)
+
+
+Further options can be explored by running
+chain --help
+
+For example, to constrain the average inverse Polsby-Popper compactness at 160 and preserve counties not divided by the current districting for the 2011 Pennsylvania map, one would run:
+chain -f InputPA10.txt -n 22 --median_mean --BG_modified --counties --L1-compactness 160
+
+
+Note that not all choices allowed by the program are equally reasonable.  For example, metrics based on the efficiency gap and seat count are insensitive to small changes when the number of districts is small (say, <50).
+
+This code is modified from its original version. 
+The original program accompanies the paper
+"Assessing significance in a Markov chain without mixing" by
+Maria Chikina, mchikina@pitt.edu
+Alan Frieze, alan@random.math.cmu.edu
+Wesley Pegden, wes@math.cmu.edu
+The authors were contacted and granted permission for the modification of the code to accompany the thesis.

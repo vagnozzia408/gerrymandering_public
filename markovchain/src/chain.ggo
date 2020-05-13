@@ -1,0 +1,37 @@
+package	"chain"
+version	"v1.0"
+purpose	"Search congressional district markov chain."
+usage "chain -n steps -f filename"
+
+section "Main"
+option  "statistic" X "statistical test"          values= "rootep", "GCserial", "starsplit", "GCparallel"  default="rootep" optional 
+option  "steps"	n   "do 2^n steps" longlong
+option "numdists" N "number of districts" int optional default="7"
+option "filename"  	 f   "name of district file" string typestr="string" typestr="filename" required
+option "period" d "2^d is period for output" int default="22" optional
+option  "only-end"   Z  "only output final results"     flag off
+option  "variance"   V   "report variance statistics"     flag off
+option  "median_mean" M "report median/mean test statistics" flag off
+option "partisan_bias" B "report partisan bias test statistics" flag off
+option "BG_uniform" u "report uniform geometric bias test statistics" flag off
+option "BG_modified" m "report modified geometric bias test statistics" flag off
+option "seat_slide" L "report seat-slide test statistics" flag off	  
+option  "efficiency_gap" E "report efficiency gap test statistics" flag off
+option "seats" S "report seat count test statistics" flag off
+option  "histogram" H "output seat count histogram [HEURISTIC]" flag off hidden
+option "freeze" F "list of districts to leave unchanged (e.g., for existing M/M districts)" int optional multiple
+option "counties" C "preserve any counties currently belonging to a unique district" flag off
+option "poperror" p "population percent error allowed" float default=".02" optional
+option "perimeter" P "districting perimeter threshold" float optional
+option "polsby-popper" c "Polsby-Popper compactness threshold" float  optional
+option "L1-compactness" 1 "threshold for sum of Polsby-Popper values" float optional
+option "L2-compactness" 2 "threshold for L2 norm of Polsby-Popper values" float optional
+option "inputsvg-filename"  	 I   "filename of svg input" string typestr="string" default="input.svg" typestr="filename" optional
+option "svg-filename" s "svg filename" string typestr="string" default="districting" typestr="filename" optional
+option "precinct-filename" o "precinct filename" string typestr="string" default="OutputPA" typestr="filename" optional
+option "svg-firstline" l "first rgb line of input.svg" int default="20" optional
+option "stages" O "output files for intermediate stages" flag off
+option "flip" R "flip A/B party correspondence" flag off
+option "threads" t "number of threads to use (starsplit branches)" int optional
+option "branches" b "2^b is number of branches to use for GCparallel" int optional default="8"
+option "seed" - "seed offset (for benchmarking)" int optional default="0" hidden
