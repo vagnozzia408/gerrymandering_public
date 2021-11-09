@@ -8,7 +8,7 @@ https://github.com/vagnozzia408/gerrymandering_public
 This directory contains the files as they existed during the time of analysis for the study presented.. 
 
 
-This program runs the sqrt(ep) test for redistriciting Markov Chains on the Congressional Districtings of the Commonwealth of Pennsylvania.
+This program runs the sqrt(ep) test for redistricting Markov Chains on the Congressional Districtings of the Commonwealth of Pennsylvania.
 
 To install, type
 make
