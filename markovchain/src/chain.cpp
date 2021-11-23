@@ -704,7 +704,7 @@ double BG_modified(double * Ashare)
 {
 	// Ashare: Democratic Vote Shares per District	
 	// Calculate the average vote share V for party A under the current districting.
-	double sum_Ashare = 0;						// TO DO: INCORPORATE RANDOMNESS TO BUMP ANY v=.5 UP OR DOWN JUST BELOW
+	double sum_Ashare = 0;						// Incorporated randomness to bump any v=.5 up or down slightly
 	for (int i=0; i<g_NUMDISTRICTS; i++){
 		sum_Ashare += Ashare[i];
 	}
@@ -761,14 +761,20 @@ double BG_modified(double * Ashare)
 				double m = (SV_Points[i+1]-SV_Points[i-1])/(V_Points[i+1]-V_Points[i-1]);
 				double b = SV_Points[i-1]-m*V_Points[i-1];
 				double adj_V = (SV_Points[i]-b)/m;
-				assert(adj_V > V_Points[i-1] && adj_V < V_Points[i+1]);
+				//assert(adj_V > V_Points[i-1] && adj_V < V_Points[i+1]);
+				// 11-23-2021 edit: if we hit more than 2 consecutive points, just don't count this measure on this map
+				if(adj_V == V_Points[i-1] || adj_V == V_Points[i+1])
+					return 2;
 				V_Points[i] = adj_V;	// Replace the first consecutive point with this adjusted point.
 			}
 			else{	// if the two consecutive points are NOT the last two
 				double m = (SV_Points[i+2]-SV_Points[i])/(V_Points[i+2]-V_Points[i]);
 				double b = SV_Points[i]-m*V_Points[i];
 				double adj_V = (SV_Points[i+1]-b)/m;
-				assert(adj_V > V_Points[i] && adj_V < V_Points[i+2]);
+				//assert(adj_V > V_Points[i] && adj_V < V_Points[i+2]);
+				// 11-23-2021 edit: if we hit more than 2 consecutive points, just don't count this measure on this map
+				if(adj_V == V_Points[i] || adj_V == V_Points[i+2])
+					return 2;
 				V_Points[i+1] = adj_V;	// Replace the second consecutive point with this adjusted point.
 			}
 		}
@@ -1382,10 +1388,12 @@ public:
 			/////////////////////////
 			// AMV EDIT 11-1-19 ////
 			if (doBGmodified){
-				if (BG_modified(Ashare) >= initial.BG_modified)
-					threadcounts[t].BG_modified_moreunusual+=revisitations;
-				else
-					threadcounts[t].BG_modified_lessunusual+=revisitations;
+				double BGMtest = BG_modified(Ashare);	// 11-23-21 edit: added flag for BG_modified - if an invalid seats-votes graph is produced (e.g. same Ashare in multiple districts), the measure won't get counted for this map
+				if(BGMtest!=2)
+					if (BG_modified(Ashare) >= initial.BG_modified)
+						threadcounts[t].BG_modified_moreunusual+=revisitations;
+					else
+						threadcounts[t].BG_modified_lessunusual+=revisitations;
 			}
 			/////////////////////////
 			if (doSeatSlide){
@@ -1441,10 +1449,12 @@ public:
 			//////////////////////////
 			// AMV EDIT 11-1-19 ////
 			if (doBGmodified){
-				if (BG_modified(Ashare)>=initial.BG_modified)
-					threadcounts[t].BG_modified_moreunusual+=1;
-				else
-					threadcounts[t].BG_modified_lessunusual+=1;
+				double BGMtest = BG_modified(Ashare);	// 11-23-21 edit: added flag for BG_modified - if an invalid seats-votes graph is produced (e.g. same Ashare in multiple districts), the measure won't get counted for this map
+				if(BGMtest!=2)
+					if (BG_modified(Ashare)>=initial.BG_modified)
+						threadcounts[t].BG_modified_moreunusual+=1;
+					else
+						threadcounts[t].BG_modified_lessunusual+=1;
 			}
 			//////////////////////////
 			if (doSeatSlide){

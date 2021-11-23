@@ -2,11 +2,12 @@ This directory contains the code and associated data files for the thesis
 Detecting Partisan Gerrymandering through Mathematical Analysis: A Case Study of South Carolina
 by Anna Marie Vagnozzi.
 
-The most up-to-date versions of the code and data files can be found at:
+This is the most up-to-date version of the code.
+
+The files as they existed during the time of analysis for the study presented in my master's thesis can be found in snapshot_thesis_files.zip at:
 https://github.com/vagnozzia408/gerrymandering_public
 
 This directory contains the files as they existed during the time of analysis for the study presented. 
-
 
 This program runs the sqrt(ep) test for redistricting Markov Chains on the Congressional Districtings of the Commonwealth of Pennsylvania.
 
