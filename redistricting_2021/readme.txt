@@ -1,0 +1,1 @@
+This folder contains files and data used in the analysis of the South Carolina election maps proposed and voted on during the 2021 Redistricting cycle. All work was done in collaboration with Dr. Matthew J. Saltzman, Blake Splitter, and Amy Burton Gore at Clemson University and the South Carolina League of Women Voters.
