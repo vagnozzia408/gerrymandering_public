@@ -727,6 +727,11 @@ double BG_modified(double * Ashare)
 		else { // if (Ashare[i] >= 0.5) (equality seldom occurs)		BUT WHEN IT DOES IT IS BAD. WHY DID YOU DO THIS.
 			new_V = V / (2*Ashare[i]);									// 3-2-2020 EDITS: Fixed Ashare calculations to ensure no ties result.
 		}
+		if(isnan(new_V)){ // 2021-11-29: -nan getting calculated as a V_Point. This should locate the error.
+			cerr << "V=" << setprecision(20) << V << endl;
+			cerr << "Ashare[" << i << "]=" << setprecision(20)<< Ashare[i]  << endl;
+			exit(-1);
+		}
 		
 		// 2020-03-02
 		//if(new_V == V){
@@ -743,6 +748,13 @@ double BG_modified(double * Ashare)
 		/////////////
 		
 		V_Points[i+1] = new_V;
+		// 2021-12-05 Check to see if somehow new_V magically became a nan.
+		if(isnan(V_Points[i+1])){
+			cerr << "V_Points[" << i+1 << "]=" << setprecision(20) << V_Points[i+1] << endl;
+			cerr << "V=" << setprecision(20) << V << endl;
+			cerr << "Ashare[" << i << "]=" << setprecision(20)<< Ashare[i]  << endl;
+			exit(-1);
+		}
 	}
 	
 	// Sort the average vote shares.
@@ -766,6 +778,19 @@ double BG_modified(double * Ashare)
 				if(adj_V == V_Points[i-1] || adj_V == V_Points[i+1])
 					return 2;
 				V_Points[i] = adj_V;	// Replace the first consecutive point with this adjusted point.
+				// 2021-12-05: Check the replaced V_Point
+				if(isnan(V_Points[i])){
+					cerr << "First Branch Fails (Line 783)" << endl;
+					cerr << "V_Points[" << i-1 << "]=" << setprecision(20) << V_Points[i-1] << endl;
+					cerr << "V_Points[" << i << "]=" << setprecision(20) << V_Points[i] << endl;
+					cerr << "V_Points[" << i+1 << "]=" << setprecision(20) << V_Points[i+1] << endl;
+					cerr << "m=" << setprecision(20) << m << endl;
+					cerr << "b=" << setprecision(20) << b << endl;
+					cerr << "SV_Points[" << i-1 << "]=" << setprecision(20) << SV_Points[i-1] << endl;
+					cerr << "SV_Points[" << i << "]=" << setprecision(20) << SV_Points[i] << endl;
+					cerr << "SV_Points[" << i+1 << "]=" << setprecision(20) << SV_Points[i+1] << endl;
+					exit(-1);
+				}
 			}
 			else{	// if the two consecutive points are NOT the last two
 				double m = (SV_Points[i+2]-SV_Points[i])/(V_Points[i+2]-V_Points[i]);
@@ -776,6 +801,19 @@ double BG_modified(double * Ashare)
 				if(adj_V == V_Points[i] || adj_V == V_Points[i+2])
 					return 2;
 				V_Points[i+1] = adj_V;	// Replace the second consecutive point with this adjusted point.
+				// 2021-12-05: Check the replaced V_Point
+				if(isnan(V_Points[i+1])){
+					cerr << "Second Branch Fails (Line 806)" << endl;
+					cerr << "V_Points[" << i << "]=" << setprecision(20) << V_Points[i] << endl;
+					cerr << "V_Points[" << i+1 << "]=" << setprecision(20) << V_Points[i+1] << endl;
+					cerr << "V_Points[" << i+2 << "]=" << setprecision(20) << V_Points[i+2] << endl;
+					cerr << "m=" << setprecision(20) << m << endl;
+					cerr << "b=" << setprecision(20) << b << endl;
+					cerr << "SV_Points[" << i << "]=" << setprecision(20) << SV_Points[i] << endl;
+					cerr << "SV_Points[" << i+1 << "]=" << setprecision(20) << SV_Points[i+1] << endl;
+					cerr << "SV_Points[" << i+2 << "]=" << setprecision(20) << SV_Points[i+2] << endl;
+					exit(-1);
+				}
 			}
 		}
 		// otherwise do nothing - all the V_Points are fine.
@@ -1389,11 +1427,12 @@ public:
 			// AMV EDIT 11-1-19 ////
 			if (doBGmodified){
 				double BGMtest = BG_modified(Ashare);	// 11-23-21 edit: added flag for BG_modified - if an invalid seats-votes graph is produced (e.g. same Ashare in multiple districts), the measure won't get counted for this map
-				if(BGMtest!=2)
+				if(BGMtest!=2){
 					if (BG_modified(Ashare) >= initial.BG_modified)
 						threadcounts[t].BG_modified_moreunusual+=revisitations;
 					else
 						threadcounts[t].BG_modified_lessunusual+=revisitations;
+				}
 			}
 			/////////////////////////
 			if (doSeatSlide){
@@ -1450,11 +1489,12 @@ public:
 			// AMV EDIT 11-1-19 ////
 			if (doBGmodified){
 				double BGMtest = BG_modified(Ashare);	// 11-23-21 edit: added flag for BG_modified - if an invalid seats-votes graph is produced (e.g. same Ashare in multiple districts), the measure won't get counted for this map
-				if(BGMtest!=2)
+				if(BGMtest!=2){
 					if (BG_modified(Ashare)>=initial.BG_modified)
 						threadcounts[t].BG_modified_moreunusual+=1;
 					else
 						threadcounts[t].BG_modified_lessunusual+=1;
+				}
 			}
 			//////////////////////////
 			if (doSeatSlide){
