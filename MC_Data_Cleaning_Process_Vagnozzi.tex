@@ -1,0 +1,565 @@
+\documentclass[11pt]{article} 
+\usepackage{setspace}
+\usepackage[english]{babel}  
+\usepackage{etoolbox} 
+\usepackage{graphicx}   
+\usepackage{caption}  
+\usepackage{changepage}  
+\usepackage{titlesec}  
+\usepackage{hyperref} 
+\usepackage{array}  
+\usepackage{multirow}
+\usepackage[margin=1in]{geometry}
+\usepackage{enumitem}  
+\usepackage{natbib} 
+\usepackage{bibentry}  
+\usepackage{amsmath}
+\usepackage{upgreek}
+\usepackage{kbordermatrix}
+\renewcommand{\arraystretch}{1.5}
+\usepackage[dvipsnames]{xcolor}
+
+\usepackage{amssymb}
+\newlist{todolist}{itemize}{2}
+\setlist[todolist]{label=$\square$}
+\usepackage{pifont}
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
+\newcommand{\done}{\rlap{$\square$}{\raisebox{2pt}{\large\hspace{1pt}\cmark}}%
+\hspace{-2.5pt}}
+\newcommand{\wontfix}{\rlap{$\square$}{\large\hspace{1pt}\xmark}}
+
+\bibliographystyle{apalike}
+\pagestyle{plain}  
+\setlength\parindent{0pt} 
+\title{\LARGE \textbf{Data Cleaning Process for Markov Chain Analysis}}
+\author{\normalsize Anna Marie Vagnozzi}
+  
+\date{} 
+
+\makeatletter 
+
+%\doublespacing
+
+%----------------------------------------------------------------------------------------
+
+\begin{document} 
+
+\nobibliography*
+
+\begin{singlespace}
+\maketitle  
+\end{singlespace}
+
+This document details the process used to generate the necessary data files for the Markov chain analysis used to assess 2021 election maps for partisan bias. All files referenced can be found in a GitHub repository at \url{https://github.com/vagnozzia408/gerrymandering_public} in the \verb|redistricting_2021/| subdirectory. All references to files in this document will be relative to this subdirectory.
+
+\section{Required Software}
+All operations described in this document are performed in ArcGIS Pro~2.8.3, Excel, Python~3, Jupyter Notebook, and Notepad++.
+
+\section{Required Data}
+
+\subsection{District Maps}
+
+Districting plans are most commonly shared as \textit{block assignment files} that assign each census block to a single district. Such files can often be obtained from state legislative pages or from groups (such as the League of Women Voters) that may be proposing a districting plan. Shapefiles for census blocks can be downloaded from the U.S.\ Census Bureau at \url{https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html}. \\
+
+To generate a \textit{district shapefile}, locate the block assignment file (\verb|.csv| or \verb|.xlsx|) and the census block shapefile (\verb|.shp|), then perform the following steps in ArcGIS Pro.
+\begin{enumerate}
+	\item Add the census block shapefile and the block assignment file to a current project.
+	\item Use the Join function to join the block assignment file to the shapefile using the GEOID field.
+	\item Use the \verb|Dissolve| geoprocessing tool to dissolve features by the district ID field.
+	\item Use the \verb|Feature Class to Shapefile| geoprocessing tool to export the resulting feature class as a shapefile to the appropriate directory.
+\end{enumerate}
+
+\subsection{Voting Data}
+
+In South Carolina, voting data by precinct can be found publicly at \url{https://www.scvotes.gov/}, the website of the South Carolina Election Commission. For the Markov chain analysis, a proxy for Republican/Democratic voter preferences must be chosen; a detailed description of how to choose an appropriate proxy can be found in the master's thesis associated with this project\footnote{Vagnozzi, Anna Marie, ``Detecting Partisan Gerrymandering through Mathematical Analysis: A Case Study of South Carolina'' (2020). \textit{All Theses.} 3347. Available at \url{https://tigerprints.clemson.edu/all_theses/3347}.}.\\
+
+John Ruoff provided a cleaned \verb|.xlsx| version of relevant voting data by precinct as reported by SCVotes. The precincts correspond to those in place at the time of the 2020 General Election. The U.S.\ Senate race was used as a proxy for voter preference in this analysis, so for each precinct, number of votes cast for the Democratic Senate candidate and the Republican Senate candidate were reported.
+
+\subsection{Precinct Shapefile}
+
+A \textit{precinct shapefile} must be obtained that corresponds to the General Election that will be used as a proxy for voter preferences, as voting data must have a one-to-one match with each precinct. \\
+
+Precinct shapefiles can be obtained through correspondence with the South Carolina Revenue and Fiscal Affairs Office; however, these maps are typically prone to error and difficult to clean. A more reasonable choice for a starting precinct map is to use a shapefile of \textit{Census Voting Districts (VTDs)}. Though it may not offer an exact correspondence to the precincts listed by SCVotes for a given election, it usually has fewer errors and can be more easily cleaned. This VTD shapefile was provided by John Ruoff and can be found in the GitHub repository referenced at the top of this document. \\
+
+The majority of this document pertains how to clean the precinct shapefile in order to generate the input file for the Markov chain code.
+
+\section{Precinct Cleaning Process}
+
+This process begins with the VTD Shapefile provided by John:\\
+\verb|sc_maps/census_VTDs_2021/Voting_District_2021-09-22.shp|\\
+
+Before proceeding, create a geodatabase to store all intermediate ArcGIS data.
+
+\subsection{Create a Map Bounding Box}
+
+First get the VTD shapefile loaded into ArcGIS Pro.
+
+\begin{enumerate}
+\item Export the VTD shapefile as a Feature Class to have full access to the range of ArcGIS functionality. It's a good idea to keep track of map versions if you ever need to go back a previous step in the process, so save the Feature Class in your geodatabase with a version number (\verb|v0|).
+\item (Optional) Delete unnecessary fields of data that will not be utilized in the analysis. This tends to speeds up ArcGIS functionality. (E.g.\ In the 2021 analysis, I kept only the fields ID, VTD, COUNTY, STATE, NAME, POPULATION, Shape\_Length, and Shape\_Area.)
+\end{enumerate}
+
+A polygon must be created around the existing map in ArcGIS Pro to manage precincts along the outer border of the state. To create this bounding box, first create a copy of the \verb|v0| map as a Feature Class. Then, in this copied map, perform the following:
+\begin{enumerate}
+\item Use the \verb|Merge| tool under the \verb|Edit| tab to merge all features into a single polygon. The result will be a single-polygon map of South Carolina.
+\item Use ArcGIS to create a new polygon with a hole in the middle that fully contains the state polygon. The shape of the outer polygon is not important.
+\item Use the \verb|Align Edge| tool under the \verb|Edit| tab to snap the edge of the hole (inner border of the new polygon) with the outside of the state polygon.
+\item Delete the state polygon in the center. This will leave a single polygon with a SC-shaped hole in the middle.
+\item Use the \verb|Merge| \textit{geoprocessing tool} (separate from the button on the \verb|Edit| tab) to merge this copied map Feature Class to the original \verb|v0| map. Save the resulting map as \verb|v1|. This map's attribute table will have one record per precinct plus one for the outer state polygon.
+\end{enumerate}
+
+\subsection{Resolve Geographic Errors}
+Associated files for this step in the process can be found in the GitHub repository under the subdirectory \verb|1_resolve_map_discrepancies/|.\\
+
+To check for \textbf{gaps and overlaps} between precincts:
+\begin{enumerate}
+	\item Run the \verb|Polygon to Line| geoprocessing tool on the \verb|v1| map. 
+	\item In the resulting \verb|LEFT_FID| field, check to see if any of the cells equal $-1$. There should only be one record with this value: the polygon for the outer state.
+	\item If more than one record has a \verb|LEFT_FID| field with $-1$, it means that the associated polygon has a border that is present at a gap or an overlap between precincts. Gaps and overlaps must be resolved before proceeding. If the number of errors is small, this can be done by manually adjusting precinct boundaries using the \verb|Edit| tab. More sophisticated processes may be needed if there is a large number of errors.
+\end{enumerate}
+
+\textbf{Multipart precincts} occur if a precinct is made up of two or more non-contiguous polygons. (Point-contiguity is considered non-contiguous in this context.) There must be no multipart precincts to run the Markov chain analysis. To check for and resolve multipart precincts:
+\begin{enumerate}
+	\item Run the \verb|Multipart to Singlepart| geoprocessing tool on the \verb|v1| map. This will generate a new Feature Class.
+	\item Check the resulting number of records in the new Feature Class against the number of records in the \verb|v1| map. If the new Feature Class has a greater number of records, there is at least one precinct made up of multiple polygons (resulting in more than one record for that precinct). 
+	\item To identify where these occur, use the \verb|Table to Excel| tool to export the attribute table of the new Feature Class generated by \verb|Multipart to Singlepart|.
+	\item In Excel, highlight duplicate values of the \verb|VTD| field (or other unique identifier) to locate the multipart precincts.
+	\item Create a copy of the \verb|v1| map and save it as \verb|v2|. This map will contained resolved multipart precincts. (See \verb|Multipart_to_Singlepart_r2.xlsx|.)
+	\item Referencing the Excel sheet to locate the multipart polygons, use the tools under the \verb|Edit| tab in ArcGIS to appropriately edit polygon vertices and adjust precinct boundaries in the \verb|v2| map. 
+\end{enumerate}
+
+Reasonable judgment calls will need to be made regarding how to adjust the boundaries in a manner that does not drastically impact compactness, precinct neighbors, or other relevant variables. A record of changes made to the 2021 SC precinct map are detailed below for reference.
+
+\begin{itemize}
+	\item \textbf{VTD 45011000012 (Snelling):} Removed small area contained within the neighboring SRS precinct.
+	\item \textbf{VTD 45015000038 (Sangaree 1):} Removed small sliver contained in the neighboring Discovery precinct to the south.
+	\item \textbf{VTD 45015000040 (Sangaree 3):} Removed sliver to the east beside the neighboring Seventy Eight precinct.
+	\item \textbf{VTD 45021000002 (Alma Mill):} Removed self-intersection in the southwest region of the precinct.
+	\item \textbf{VTD 45035000047 (Newington):} Removed tiny piece in southeast corner of neighboring Newington 2 precinct.
+	\item \textbf{VTD 45041000063 (West Florence 1):} Removed tiny piece in south-southeast region by the south bordering precinct.
+	\item \textbf{VTD 45059000006 (Laurens 6):} Removed one small piece in the western region. The larger piece on the northern region was too large to justify removal, so vertices were edited to connect the two regions.
+	\item \textbf{VTD 45063000043 (Pine Ridge 1):} Removed sliver to the south of the south-bordering precinct, Pine Ridge 2. Also edited corresponding border of Gaston 2.
+	\item \textbf{VTD 45063000055 (Cayce 2A):} Removed small piece on northern region.
+	\item \textbf{VTD 45071000036 (Prosperity City):} Removed tiny piece to the north.
+	\item \textbf{VTD 45075000118 (Suburban 8):} Removed three small pieces in the southeast region.
+	\item \textbf{VTD 45077000101 (Stone Church):} Removed small piece contained in neighboring Friendship precinct.
+	\item \textbf{VTD 45077000102 (University):} Removed small piece at southeast region.
+	\item \textbf{VTD 45089000011 (Hemingway):} Two roughly equally sized regions were contiguous only at a point, so the vertices were edited to more fully connect the two regions.
+	\item \textbf{VTD 45091000056 (Anderson Road):} Removed sliver to the north of the north-bordering precinct, Celanese.
+	\item \textbf{VTD 45091000079 (Hopewell):} Removed a sliver far to the southeast of the precinct.
+	\item \textbf{VTD 45091000086 (Springdale):} Removed a sliver far to the north of the precinct.
+\end{itemize}
+
+Once all geographic errors have been resolved, re-run the two geoprocessing tools to ensure that no new errors have been created. \verb|Polygon to Line| should result in only one record with \verb|LEFT_FID=-1|, and \verb|Multipart to Singlepart| should result in the same number of records as the \verb|v2| map, indicating no multipart precincts.\\
+
+For the 2021 data, this process resulted in a \verb|v2| map that contained 2,269 polygons (2,268 precincts plus the outer state polygon).
+
+\subsection{Resolving VTD---Precinct Discrepancies}
+
+Associated files for this step in the process can be found in the GitHub repository under the subdirectory \verb|1_resolve_map_discrepancies/|.\\
+
+Now you can resolve discrepancies between the VTD precincts and the voting data precincts. (This will allow you to join the voting data to the shapefile.) Below is the most straightforward way I have found to do this.
+
+\begin{enumerate}
+\item Use the \verb|Table to Excel| geoprocessing tool in ArcGIS Pro to export the attribute table for the \verb|v2| map. Sort this table of shapefile precinct data in Excel by County, Precinct Name. (See first sheet of \verb|Precinct_Check_r1.xlsx|.)
+\item Create a new sheet and add the table of voting data. Sort the voting data in Excel by County, Precint Name. (See the second sheet of \verb|Precinct_Check_r1.xlsx|.)
+\item Create a new sheet. Put these two sorted lists side-by-side. (See the third sheet titled ``Discrepancies'' of \verb|Precinct_Check_r1.xlsx|.)
+\item In the Discrepancies sheet with the side-by-side data, create a check column, e.g.\\
+\verb|=IF([shapefile precinct name]=[vote data precinct name],"ok","CHECK")|.\\
+Also create a column to document any fixes.
+
+\item Create a new version of the map (\verb|v3|) where edits will be made. 
+
+\item Fix any precinct naming errors (e.g.\ ``Mt.'' vs.\ ``Mount'', ``No.'' vs.\ ``\#'', etc.\ or obvious misspellings). Name adjustments may be made either in the Excel sheet of voting data or the shapefile polygons themselves (see note below). 
+
+\item Determine locations of any precinct splits or merges and make the appropriate changes to the shapefile by editing precinct boundaries using the \verb|Edit| tab in ArcGIS. Splits and merges can be identified if a precinct is present on one list and not the other. If splitting a precinct, population counts will need to be estimated for each new resulting precinct; one way to do this is by splitting population proportionally by number of registered voters in the voting precinct.
+
+\item After making all adjustments, re-run \verb|Polygon to Line| and \verb|Multipart to Singlepart| on \verb|v3| to ensure that no new errors have occurred as a result of editing precinct boundaries.
+\end{enumerate}
+
+The \textit{South Carolina Code of Laws} keeps a detailed record of precinct changes that may be helpful to reference during this process\footnote{\url{https://law.justia.com/codes/south-carolina/2020/title-7/chapter-7/}}. This will help not only in identifying precinct name changes, but also any merges or splits that have happened. It may also be helpful to have a precinct map from an earlier point in time, which could provide a guide for how to adjust precinct boundaries if a merge or split has occurred; this could be obtained through Revenue and Fiscal Affairs.\\
+
+This process will result in the \verb|v3| precinct shapefile having a one-to-one correspondence with the voting data, which allows for voting data to be added to the shapefile attribute table. In the 2021 process, this resulted in a shapefile with 2,264 polygons (2,263 precincts and 1 outer state).
+
+\subsection{Dissolving Precinct Holes}
+
+The Markov chain analysis requires that the precinct map must not contain holes; in other words, no precinct may be fully contained inside another precinct.
+
+\begin{enumerate}
+	\item Save a new version (\verb|v4|) of the precinct map; this version will contain precincts without holes.
+	\item Use the \verb|Merge| tool under the \verb|Edit| tab in ArcGIS to merge hole precincts to their surrounding precinct. When doing so, take note of how ArcGIS handles merging the record fields and make adjustments as necessary. (E.g., populations should be added to form the new merged record, but other fields may need to be handled differently.)
+\end{enumerate}
+
+In the 2021 process, three hole precincts were merged to their surrounding precincts.
+
+\begin{itemize}
+	\item \textbf{East McColl (VTD 45069000011)} was merged to \textbf{McColl (VTD 45069000010)} and renamed \textit{McColl/East McColl}.
+	\item \textbf{Prosperity City (VTD 45071000036)} was merged to \textbf{Prosperity Outside (VTD 45071000051)} and renamed \textit{Prosperity Outside/Prosperity City}.
+	\item \textbf{Whitmire City (VTD 45071000049)} was merged to \textbf{Whitmire Outside (VTD 4507000050)} and renamed \textit{Whitmire Outside/Whitmire City}.
+	
+\end{itemize}
+
+This process resulted in 2,261 polygons (2,260 precincts and 1 outer state) in version \verb|v4|.
+
+\subsection{Merging Vote Data to Shapefile}
+
+Associated files for this step in the process can be found in the GitHub repository under the subdirectory \verb|1_resolve_map_discrepancies/|.\\
+
+Merging precincts may result in duplicate values of the formerly unique identifier field, \verb|VTD|. To resolve this and make \verb|VTD| a unique field again:
+\begin{enumerate}
+	\item Use the \verb|Table to Excel| tool to export the attribute table for \verb|v4| of the map. \\
+	(See \verb|Precinct_Check_r2.xlsx|.)
+	\item In Excel, highlight duplicate values within the \verb|VTD| column. 
+	\item For each duplicate \verb|VTD|, rename the field for one of the duplicated records in the Feature Class (\verb|v4|).
+\end{enumerate}
+
+\verb|VTD| reassignment for the 2021 precinct map were as follows:
+\begin{itemize}
+	\item \textbf{Yeaman’s Club} changed from VTD 45015000068 to \textbf{45015000102}.
+	\item \textbf{Jordanville} changed from VTD 45051000112 to \textbf{45051000230}.
+	\item \textbf{Hickory Hill} changed from VTD 45051000163 to \textbf{45051000231}.
+	\item \textbf{Joyner Swamp} changed from VTD 45051000166 to \textbf{45051000232}.
+	\item \textbf{Spring Branch} changed from VTD 45051000168 to \textbf{45051000233}.
+	\item \textbf{Taylorsville} changed from VTD 45051000186 to \textbf{45051000234}.\\
+	\end{itemize}
+
+Once changes have been made to the \verb|v4| shapefile and the \verb|VTD| field is unique, it is time to merge the vote data to the shapefile.
+
+\begin{enumerate}
+\item Use the \verb|Table to Excel| tool to re-export the attribute table. In Excel, sort the table by County, Precinct Name. (You can verify that the \verb|VTD| field is now unique by using conditional formatting to highlight duplicate values. See the first sheet of \verb|Precinct_Check_r3.xlsx|.)
+
+\item Create a new sheet in the Excel table, and copy and paste the voting data from its source. Sort the table by County Name, Precinct Name. (See the second sheet of \verb|Precinct_Check_r3.xlsx|. Voting data were obtained from John Ruoff.)
+
+\item Create a new sheet, then paste the shapefile precinct data and the voting data side-by-side. (See the third sheet titled ``Combined'' of \verb|Precinct_Check_r3.xlsx|.)
+
+\item Create a ``check'' column to verify that the data are lined up correctly, e.g.\\
+\verb|=IF([shapefile precinct name]=[vote data precinct name],"ok","CHECK")|.\\
+Make adjustments in the spreadsheet as necessary to ensure that precincts are properly matched.
+
+\item Once the data are matched for each precinct, create a new unique identifier (in the 2021 analysis, this is called \verb|PSN| for ``\textit{precinct serial number}''). This unique identifier should be indexed from $0, 1,\dots,n-1$ for $n$ precincts, and the outer state should be assigned \verb|PSN=-1|.
+
+\item Save the matched sheet as a new Excel sheet (see \verb|VTD_to_PSN_Join.xlsx|).
+
+\item Add this new Excel sheet to ArcGIS, then join it to the Feature Class layer by \verb|VTD| using the \verb|Join| tool. 
+
+\item Export a copy of the Feature Class as \verb|v5| of the map so the joined data are now a permanent part of the attribute table for the Feature Class.
+\end{enumerate}
+
+This map (\verb|v5|) should now have the following fields, which will be used in the Markov chain input file. Field names should be renamed as necessary to match the field names below.
+\begin{itemize}
+	\item \textbf{PSN:} Unique ID for each precinct, indexed $0,1,\dots,n-1$ for $n$ precincts with the outer state having \verb|PSN=-1|. (In the 2021 data, \verb|PSN| values range from $0,1,\dots , 2259$ for $2,260$ precincts.)
+	\item \textbf{county:} This field should have a string with the county in which a precinct resides. This will likely have been joined to the precinct shapefile from the vote data.
+	\item \textbf{pop:} Population for a given precinct. If using Census VTDs as the starting precinct map, the shapefile should contain these population counts.
+	\item \textbf{voteA:} Number of \textcolor{blue}{Democratic} votes cast in the proxy election in a given precinct. (The Democratic party is used as the reference party.)
+	\item \textbf{voteB:} Number of \textcolor{red}{Republican} votes cast in the proxy election in a given precinct. 
+\end{itemize}
+
+\subsection{Calculating Precinct Areas}
+
+ArcGIS will generate a default field for polygon areas and perimeters, but they are in ambiguous units, so it is helpful to have columns that are in identifiable units. (This helps later with compactness calculations.)
+
+\begin{enumerate}
+	\item In \verb|v5| of the map, add a \textit{double} field titled \verb|Pct_Area|. 
+	\item Right-click on the field header for \verb|Pct_Area| and select \verb|Calculate Geometry|.
+	\item Set the following parameters:
+	\begin{itemize}
+		\item Property: Area
+		\item Area Unit: km$^2$ \textit{(or unit of choice)}
+		\item Coordinate System: Current Map
+	\end{itemize}
+	\item Add another \textit{double} field titled \verb|Pct_Perim|.
+	\item Right-click on the field header for \verb|Pct_Perim| and select \verb|Calculate Geometry|.
+	\item Set the following parameters:
+	\begin{itemize}
+		\item Property: Perimeter length
+		\item Length Unit: km \textit{(or unit of choice that matches area units)}
+		\item Coordinate System: Current Map
+	\end{itemize}
+\end{enumerate}
+
+If any subsequent changes to the map geography are made, be sure to recalculate these fields using the steps above.
+
+\section{Generating Neighbor Lists}
+
+The Markov chain code requires a precinct adjacency list in which each precinct's neighbors (and their corresponding shared perimeter lengths) are listed in clockwise order. This is one of the most time-consuming parts of the data cleaning process. Before beginning, make sure that you have the most recent version (\verb|v5|) of the South Carolina precinct Feature Class added to ArcGIS.
+
+\subsection{Generating the Precinct Lines Feature}
+
+\begin{enumerate}
+\item Use the \verb|Polygon to Line| geoprocessing tool to generate a Feature Class in which polygon boundaries appear as line features. This extracts relevant precinct neighbor data. Use the following parameters:
+\begin{itemize}
+	\item Input Features: \verb|SC_Precinct_Map_v5|
+	\item Output Feature Class: \verb|SC_Precincts_as_Lines_LR|
+	\item Check \textit{Identify and store polygon neighboring information}
+\end{itemize}
+
+\item The above process will add \verb|SC_Precincts_as_Lines_LR| as a Feature Class to your ArcGIS project. Open its attribute table and sort by the fields \verb|LEFT_FID| then \verb|RIGHT_FID|.
+
+\item Remove the record that corresponds to the boundary of the outer state polygon, which should have \verb|LEFT_FID=-1|. The line feature that makes up this boundary is not needed.
+
+\item In the attribute table, add \textit{long integer} fields \verb|SRC_PSN| and \verb|NBR_PSN|.
+
+\item \verb|Join| the field \verb|OBJECTID| from \verb|v5| of the precinct map to the \verb|LEFT_FID| field in the lines feature. 
+
+\item Calculate the \verb|SRC_PSN| field using the joined layer's \verb|PSN| field, then remove the join.
+
+\item \verb|Join| the field \verb|OBJECTID| from \verb|v5| of the precinct map to the \verb|RIGHT_FID| field in the lines feature.
+
+\item Calculate the \verb|NBR_PSN| field using the joined layer's \verb|PSN| field, then remove the join.
+
+\item Sort the lines feature attribute table by \verb|SRC_PSN| then \verb|NBR_PSN|.
+
+\item Export a copy of the lines feature class (\verb|SC_Precincts_as_Lines_LR|) and save it as \\
+\verb|SC_Precincts_as_Lines_RL|.
+
+\item In the copied lines feature, switch the field names of \verb|SRC_PSN| and \verb|NBR_PSN|. You will need to do this in two separate saves (e.g.\ rename the fields \verb|oldSRC_PSN| and \verb|newSRC_PSN|, save, then rename them \verb|NBR_PSN| and \verb|SRC_PSN| and save again) or the changes will not stick.
+
+\item Sort the copied lines feature by \verb|SRC_PSN| then \verb|NBR_PSN|.
+
+\item Use the \verb|Merge| geoprocessing tool to combine the two lines features using the following parameters:
+\begin{itemize}
+	\item Input Datasets: \verb|SC_Precincts_as_Lines_LR| and \verb|SC_Precincts_as_Lines_RL|
+	\item Output Dataset: \verb|SC_Precincts_as_Lines_All|
+\end{itemize}
+
+\item Sort the attribute table of the combined lines feature, \verb|SC_Precincts_as_Lines_All|, by \verb|SRC_PSN| then \verb|NBR_PSN|.
+
+\end{enumerate}
+
+The resulting Feature Class should be saved in and easily accessible from your working geodatabase. Each record of this Feature Class's attribute table contains a line segment that makes up a part of a precinct boundary, along with the unique \verb|PSN| of the source precinct and the neighboring precinct that shares a boundary for that line segment.
+
+\subsection{Generating the Precincts Points Feature}
+
+\begin{enumerate}
+\item Use the \verb|Feature Vertices To Points| geoprocessing tool to generate a Feature Class made up of all the vertices from \verb|v5| of the map. Use the following parameters:
+\begin{itemize}
+	\item Input Features: \verb|SC_Precinct_Map_v5|
+	\item Output Feature Class: \verb|SC_Precincts_as_Points|
+	\item Point Type: All vertices
+\end{itemize}
+\item In the attribute table for the points feature generated by the previous step, add a new \textit{long integer} field titled \verb|CLCKWS_IDX| and calculate it using the \verb|OBJECTID| field. Because vertices are stored in clockwise order, sorting \verb|CLCKWS_IDX| in ascending order will give the clockwise order of the points making up a precinct boundary.
+\item In the points feature attribute table, delete all fields except \verb|OBJECTID|, \verb|PSN|, \verb|NAME| (precinct name), and \verb|CLCKWS_IDX|. This ensures faster geoprocessing.
+\item Sort the attribute table by \verb|PSN| then \verb|CLCKWS_IDX|.
+\end{enumerate}
+
+\subsection{Generating Input File for neighbors.py Script}
+
+Associated files for this step in the process can be found in the GitHub repository under the subdirectory \verb|2_neighbors/|.\\
+
+The Python script \verb|neighbors.py| will create a list of polygon neighbors and their shared perimeters in clockwise order by \verb|PSN|. It requires an input file generated as follows.
+
+\begin{enumerate}
+	\item Use the \verb|Tabulate Intersection| geoprocessing tool with the following parameters to combine relevant data from the lines feature and points feature. \textit{This process may take a while.}
+	\begin{itemize}
+		\item Input Zone Features: \verb|SC_Precincts_as_Lines_All|
+		\item Zone Fields: \verb|SRC_PSN|, \verb|NBR_PSN|, \verb|Shape_Length|
+		\item Input Class Features: \verb|SC_Precincts_as_Points|
+		\item Output Table: \verb|SC_Precincts_Point_Line_Intersection|
+		\item Class Fields: \verb|PSN|, \verb|CLCKWS_IDX|
+	\end{itemize}
+	
+	\item In the resulting table, \verb|SC_Precincts_Point_Line_Intersection|, delete the fields \verb|PNT_COUNT| and \verb|PERCENTAGE|. The table will likely have millions of records, so it is normal for this to take some time.
+	
+	\item Sort the table by \verb|SRC_PSN|, \verb|NBR_PSN|, \verb|CLCKWS_IDX| in ascending order.
+	
+	\item Use the \verb|Table to Table| tool to save \verb|SC_Precincts_Point_Line_Intersection| as a \verb|.csv| file. Be sure to enter the \verb|.csv| file extension when typing the name of the output data in the \verb|Table to Table| parameters. This resulting file will serve as the input for \verb|neighbors.py|. (See \verb|SC2021_clockwise_data.csv|.)
+	
+	\item Open the \verb|.csv| file in Notepad++ (or another text editor) and ensure that the file uses Unix (LF) end-of-line conversion and UTF-8 encoding.
+	
+	\item Follow the instructions in the comments for the \verb|neighbors.py| script to make any necessary adjustments before running the script from the command line.
+\end{enumerate}
+
+The result will be a \verb|.csv| output file that contains, for each precinct, a list of neighboring PSNs and a list of corresponding shared perimeter lengths. (See \verb|SC2021_clockwise_neighbors.csv|.)
+
+\section{Assigning Precincts to Districts}
+
+Associated files for this step in the process can be found in the GitHub repository under the subdirectory \verb|3_precinct_assignment/|.\\
+
+To begin, have the most recent version of the precinct shapefile (\verb|v5|) and the relevant district shapefile loaded into ArcGIS. (See note in Section 2.1 at the beginning of this document for instructions on how to generate the district shapefile if a districting plan is provided as a block assignment file.)\\
+
+The Markov chain analysis requires that each precinct be assigned to only one district, which is often not the case for an actual districting plan. The process detailed below assigns each precinct to the district that contains the largest proportion of its area.
+
+\begin{enumerate}
+	\item Add the most recent precinct Feature Class (\verb|v5|) and the relevant district Feature Class to the current ArcGIS project.
+	\item Use the \verb|Intersect| geoprocessing tool to overlap the precinct and district maps. When choosing the input features, be sure to list the precinct map \textit{first} and the district map second. Leave all other parameters as their defaults.
+	\item Use the \verb|Table to Excel| geoprocessing tool to export the attribute table of the resulting feature class as an \verb|.xlsx| file. 
+	\item In the Excel sheet, highlight duplicate values of \verb|PSN|. To keep only the record for a \verb|PSN| that has the largest area:
+	\begin{itemize}
+		\item Custom sort the sheet by \verb|PSN| (ascending) then \verb|Area| (descending). \textit{Note: This should be one of the last two columns, not the area field calculated in Section 3.6.}
+		\item Use the \verb|Remove Duplicate Values| feature under the \verb|Data| tab in Excel to remove duplicate \verb|PSN| values. This will keep the first row of any duplicate \verb|PSN| values and delete the rest, so sorted this way, it will keep the district overlap with the largest area.
+\end{itemize}	 
+	\item Verify that the number of records now corresponds to the number of precincts, then remove all columns except \verb|PSN| and \verb|District Number|. Save the Excel file. (See the Excel files beginning with \verb|Intersect_| in the GitHub subdirectory.)
+	\item In ArcGIS, create a new field to store the assigned district number. (E.g.\ The field name \verb|CongD_LWV| could be used to specify the Congressional district assignment from the proposed map by the League of Women Voters.)
+	\item Add the Excel file with the precinct-to-district assignment to ArcGIS.
+	\item Use the \verb|Join| feature to join the table to the precinct map by \verb|PSN|. 
+	\item Calculate the new district number field using the \verb|District Number| from the joined table, then remove the join. Repeat for all precinct-to-district assignments.
+\end{enumerate}
+
+This process may result in some districts that are non-contiguous or contain holes. Spot-check the precinct assignment for places where this happens (this can usually be accomplished by setting the Symbology of the precinct map to color precincts based on the corresponding district field) and manually adjust precinct assignment in the attribute table using your best judgment. A record of all precinct reassignments to districts for the maps analyzed in 2021 is detailed below.\\
+
+\underline{\textbf{Official Proposed Plan: Congressional}}
+
+\begin{itemize}
+	\item No changes needed.
+\end{itemize}
+
+\underline{\textbf{Official Proposed Plan: Senate}}
+\begin{itemize}
+	\item \textbf{PSN 1520}  (LEESVILLE): Changed from District 23 to 25.
+	\item \textbf{PSN 1552} (RIDGE ROAD): Changed from District 25 to 10.
+\end{itemize}
+
+\underline{\textbf{Official Proposed Plan: House Draft \#1}}
+\begin{itemize}
+	\item \textbf{PSN 406} (Yellow House): Changed from District 103 to 99.
+	\item \textbf{PSN 443} (Deer Park 1B): Changed from District 113 to 92.
+	\item \textbf{PSN 461} (James Island 19): Changed from District 115 to 119.
+	\item \textbf{PSN 464} (James Island 20): Changed from District 115 to 119.
+	\item \textbf{PSN 471} (James Island 8A): Changed from District 115 to 119.
+	\item \textbf{PSN 472} (James Island 8B): Changed from District 115 to 119.
+	\item \textbf{PSN 473} (James Island 9): Changed from District 115 to 119.
+	\item \textbf{PSN 481} (Ladson): Changed from District 113 to 94.
+	\item \textbf{PSN 482} (Lincolnville): Changed from District 113 to 94.
+	\item \textbf{PSN 637} (Chester Ward 4): Changed from District 43 to 41.
+	\item \textbf{PSN 910} (Ebenezer No.\ 3): Changed from District 63 to 60.
+	\item \textbf{PSN 979} (MURRELL’S INLET NO.\ 3): Changed from District 103 to 108.
+	\item \textbf{PSN 1052} (GREENVILLE 28): Changed from District 22 to 23.
+	\item \textbf{PSN 1127} (TANGLEWOOD): Changed from District 25 to 10.
+	\item \textbf{PSN 1319} (SOCASTEE \#1): Changed from District 68 to 61.
+	\item \textbf{PSN 1330} (TILLY SWAMP): Changed from District 105 to 56.
+	\item \textbf{PSN 1347} (OKATIE): Changed from District 122 to 120.
+	\item \textbf{PSN 1747} (Georges Creek): Changed from District 4 to 5.
+	\item \textbf{PSN 1800} (Brandon 1): Changed from District 70 to 75.
+	\item \textbf{PSN 1873} (Pontiac 2): Changed from District 78 to 70.
+	\item \textbf{PSN 2060} (CHERRYVALE): Changed from District 50 to 67.
+	\item \textbf{PSN 2180} (Delphia): Changed from District 29 to 49.
+\end{itemize}
+
+\underline{\textbf{Official Proposed Plan: House Draft \#2}}
+\begin{itemize}
+	\item \textbf{PSN 348} (Harbour Lake): Changed from District 99 to 15.
+	\item \textbf{PSN 406} (Yellow House): Changed from District 103 to 99.
+	\item \textbf{PSN 461} (James Island 19): Changed from District 115 to 119.
+	\item \textbf{PSN 464} (James Island 20): Changed from District 115 to 119.
+	\item \textbf{PSN 471} (James Island 8A): Changed from District 115 to 119.
+	\item \textbf{PSN 472} (James Island 8B): Changed from District 115 to 119.
+	\item \textbf{PSN 473} (James Island 9): Changed from District 115 to 119.
+	\item \textbf{PSN 637} (Chester Ward 4): Changed from District 43 to 41.
+	\item \textbf{PSN 910} (Ebenezer No.\ 3): Changed from District 63 to 60.
+	\item \textbf{PSN 979} (MURRELL’S INLET NO.\ 3): Changed from District 103 to 108.
+	\item \textbf{PSN 1052} (GREENVILLE 28): Changed from District 22 to 23.
+	\item \textbf{PSN 1127} (TANGLEWOOD): Changed from District 25 to 10.
+	\item \textbf{PSN 1319} (SOCASTEE \#1): Changed from District 68 to 61.
+	\item \textbf{PSN 1330} (TILLY SWAMP): Changed from District 105 to 56.
+	\item \textbf{PSN 1347} (OKATIE): Changed from District 122 to 120.
+	\item \textbf{PSN 1747} (Georges Creek): Changed from District 4 to 5.
+	\item \textbf{PSN 1800} (Brandon 1): Changed from District 70 to 75.
+	\item \textbf{PSN 1872} (Pontiac 1): Changed from District 70 to 78.
+	\item \textbf{PSN 2060} (CHERRYVALE): Changed from District 64 to 67.
+	\item \textbf{PSN 2180} (Delphia): Changed from District 29 to 49.
+\end{itemize}
+
+\underline{\textbf{Proposed League Map: Congressional}}
+\begin{itemize}
+	\item No changes needed.
+\end{itemize}
+
+\underline{\textbf{Proposed League Map: Senate}}
+\begin{itemize}
+	\item \textbf{PSN 801} (Carolina): Changed from District 38 to 44.
+\end{itemize}
+
+\underline{\textbf{Proposed League Map: House}}
+\begin{itemize}
+	\item \textbf{PSN 1347} (Okatie): Changed from District 122 to 118.
+	\item \textbf{PSN 1457} (Sandy Pointe): Changed from district 120 to 118.
+\end{itemize}
+
+Once all precinct-to-district assignments have been made to \verb|v5|, save the Feature Class.
+
+\section{Generating Markov Chain Input Files}
+
+Associated files for this step in the process can be found in the GitHub repository under the subdirectory \verb|4_data_merge/|.\\
+
+First prepare the final version of the precinct map.
+\begin{itemize}
+\item Export a copy of the Feature Class as \verb|v6|.
+\item Remove the polygon for the outer state (\verb|PSN=-1|).
+\item (Optional) You can also export the \verb|v6| Feature Class as a shapefile so it can be shared beyond the geodatabase. 
+\end{itemize}
+
+The final 2021 precinct map used in the 2021 analysis can be found in \verb|sc_maps/precincts_2020/|.\\
+
+To export the map data to be used in the generation of the Markov chain input file:
+\begin{enumerate}
+	\item Use the \verb|Table to Table| tool to export the attribute table of the \verb|v6| map as a \verb|.csv| file. (See \verb|SC2021_map_data.csv|.)
+	\item Clean the \verb|.csv| file in Excel so only the following fields remain in this order and with the following names:
+	\begin{itemize}
+		\item \verb|PSN| --- unique precinct identifier
+		\item \verb|unshared| (add this column) --- a column that contains zero for each record
+		\item \verb|area| --- the area calculated in the field \verb|Pct_Area|
+		\item \verb|voteA| --- number of precinct-level Democratic votes
+		\item \verb|voteB| --- number of precinct-level Republican votes
+		\item \verb|[District Number]| (multiple fields) --- the names for these fields may vary; there will be as many fields as there are districts you wish to analyze
+		\item \verb|county| --- string designating the county name
+	\end{itemize}
+	Save the cleaned file. (See \verb|SC2021_map_data_cleaned.csv|.)\\
+\end{enumerate}
+
+Now combine the neighbors data from Section 4.3 (\verb|SC2021_clockwise_neighbors.csv|) with the map data generated above (\verb|SC2021_map_data_cleaned.csv|) using the Python script \verb|data_merge.py|. Each resulting input file will correspond to exactly one districting plan.
+\begin{enumerate}
+	\item Verify that both input \verb|.csv| files have Unix (LF) end-of-line conversion and that they use UTF-8 encording. (This can be changed quickly in Notepad++.)
+	\item Open \verb|data_merge.py| in a text editor and address any items marked as \verb|# TO DO|.
+	\item Save \verb|data_merge.py|.
+	\item Using the neighbors data and map data as inputs, run the script in the command line to generate the \verb|.csv| input files.\\
+\end{enumerate}
+
+The last step is to convert the \verb|.csv| input files into appropriately formatted \verb|.txt| input files. For each input file:
+\begin{enumerate}
+	\item Open a blank Excel sheet.
+	\item Using the \verb|Get Data| option under the \verb|Data| tab in Excel, import a \verb|.csv| input file generated by \verb|data_merge.py|. Use the default settings.
+	\item Use \verb|Ctrl+A| to copy all data and paste into a blank \verb|.txt| file. Close the Excel file without saving.
+	\item In the \verb|.txt| file where you pasted the data, which should be tab-delimited, delete the \verb|PSN| column header to leave a blank column header for the first column.
+	\item Add two new lines at the top of the \verb|.txt| file that say \verb|precinctlistv02| and \verb|2260| (or the number of precincts in your map), respectively.
+	\item Set the EOL conversion to be Unix (LF) and verify that the file has UTF-8 encording.
+	\item Save the \verb|.txt| file. This is the input file that will be fed into the \verb|chain.cpp| code.
+\end{enumerate}
+
+The input files generated for the 2021 analysis can be found in the subdirectory \verb|input_files/|.
+
+\section{Calculating Compactness Bounds}
+Associated files for this step in the process can be found in the GitHub repository under the subdirectory \verb|5_compactness/|.\\
+
+One constraint that can be set for the chain code is a compactness threshold; this is typically chosen to be a compactness metric just slightly above the compactness measure for the starting districting plan. To calculate these compactness thresholds:
+
+\begin{enumerate}
+\item From the \verb|v6| map (or most current version), use the \verb|Dissolve| geoprocessing tool in ArcGIS with the following paramters:
+\begin{itemize}
+	\item Input Features:\verb|SC_Precincts_2021_v6|
+	\item Output Feature Class: \verb|MCDistricts_[District_Plan]|
+	\item Statistics Field(s): Field area [\verb|Pct_Area|]
+	\item Statistic Type: Sum
+	\item Uncheck \textit{Create multipart features}
+\end{itemize}
+
+Repeat this process for any districting plan you wish to analyze.
+
+\item In the resulting attribute table, add the fields \verb|DistArea| and \verb|DistPerim|, then use \verb|Calculate Geometry| to compute each district area and perimeter, respectively. Use the same units as those used to calculate precinct area in Section 3.6.
+\item Verify that \verb|SUM_Pct_Area| and \verb|DistArea| are approximately the same.
+\item Export the resulting attribute table as an Excel file using the \verb|Table to Excel| geoprocessing tool. (See the Excel files whose filenames begin with \verb|MCDistricts_|.)
+\item Use the \verb|compactness_thresholds.xlsx| Excel file to see how compactness thresholds were chosen for the ``L1 compactness'' measure, also known as \textit{Inverse Polsby-Popper}. Each threshold was set to be 2.5\% higher than the districting plan with the worst compactness score. (More details about the compactness metrics used can be found in the associated master's thesis.)
+\end{enumerate}
+
+\section{Running and Parsing Output}
+
+The readme file included with the Markov chain code contains documentation on how to compile and run the code for a particular map using the input files generated as described in this document. A full list of commands can also be viewed by typing \verb|chain|.\\
+
+As an example, consider the proposed 2021 South Carolina Congressional map. To run the analysis using the \textit{median-mean} metric as a measure of partisan bias with an allowable population error of $\pm 5\%$ and an Inverse Polsby-Popper threshold of 46, the command line would be as follows. This would generate $2^{30}$ sample maps.\\
+
+\verb|chain -f InputSC_CongDraft.txt -n 30 -N 7 --median_mean --poperror=.05|\\
+\verb|--L1-compactness=46|\\
+
+To write the output to a text file for analysis, add \verb|> output.txt| to the end of the line. A Jupyter Notebook file can be found in the GitHub repository under \verb|mc_output/| to assist with analyzing output.
+
+\end{document}  
