@@ -404,6 +404,12 @@ This process may result in some districts that are non-contiguous or contain hol
 	\item No changes needed.
 \end{itemize}
 
+\underline{\textbf{Official Proposed Plan: Congressional (House Draft)}}
+
+\begin{itemize}
+	\item No changes needed.
+\end{itemize}
+
 \underline{\textbf{Official Proposed Plan: Senate}}
 \begin{itemize}
 	\item \textbf{PSN 1520}  (LEESVILLE): Changed from District 23 to 25.
@@ -498,7 +504,8 @@ To export the map data to be used in the generation of the Markov chain input fi
 	\begin{itemize}
 		\item \verb|PSN| --- unique precinct identifier
 		\item \verb|unshared| (add this column) --- a column that contains zero for each record
-		\item \verb|area| --- the area calculated in the field \verb|Pct_Area|
+		\item \verb|area| --- the area of the precinct calculated in the field \verb|Pct_Area|
+		\item \verb|pop| --- the population in the precinct (obtained from VTD shapefile)
 		\item \verb|voteA| --- number of precinct-level Democratic votes
 		\item \verb|voteB| --- number of precinct-level Republican votes
 		\item \verb|[District Number]| (multiple fields) --- the names for these fields may vary; there will be as many fields as there are districts you wish to analyze
