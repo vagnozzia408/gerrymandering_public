@@ -1,0 +1,5 @@
+redistricting_2021/sc_maps/census_blocks_2021/tl_2021_45_tabblock20.cpg filter=lfs diff=lfs merge=lfs -text
+redistricting_2021/sc_maps/census_blocks_2021/tl_2021_45_tabblock20.dbf filter=lfs diff=lfs merge=lfs -text
+redistricting_2021/sc_maps/census_blocks_2021/tl_2021_45_tabblock20.prj filter=lfs diff=lfs merge=lfs -text
+redistricting_2021/sc_maps/census_blocks_2021/tl_2021_45_tabblock20.shp filter=lfs diff=lfs merge=lfs -text
+redistricting_2021/sc_maps/census_blocks_2021/tl_2021_45_tabblock20.shx filter=lfs diff=lfs merge=lfs -text
