@@ -545,6 +545,7 @@ One constraint that can be set for the chain code is a compactness threshold; th
 \begin{itemize}
 	\item Input Features:\verb|SC_Precincts_2021_v6|
 	\item Output Feature Class: \verb|MCDistricts_[District_Plan]|
+	\item Dissolve Field(s): \verb|[District_Field]|
 	\item Statistics Field(s): Field area [\verb|Pct_Area|]
 	\item Statistic Type: Sum
 	\item Uncheck \textit{Create multipart features}
@@ -552,7 +553,7 @@ One constraint that can be set for the chain code is a compactness threshold; th
 
 Repeat this process for any districting plan you wish to analyze.
 
-\item In the resulting attribute table, add the fields \verb|DistArea| and \verb|DistPerim|, then use \verb|Calculate Geometry| to compute each district area and perimeter, respectively. Use the same units as those used to calculate precinct area in Section 3.6.
+\item In the resulting attribute table, add the fields \verb|DistArea| and \verb|DistPerim|, then use \verb|Calculate| \verb|Geometry| to compute each district area and perimeter, respectively. Use the same units as those used to calculate precinct area in Section 3.6.
 \item Verify that \verb|SUM_Pct_Area| and \verb|DistArea| are approximately the same.
 \item Export the resulting attribute table as an Excel file using the \verb|Table to Excel| geoprocessing tool. (See the Excel files whose filenames begin with \verb|MCDistricts_|.)
 \item Use the \verb|compactness_thresholds.xlsx| Excel file to see how compactness thresholds were chosen for the ``L1 compactness'' measure, also known as \textit{Inverse Polsby-Popper}. Each threshold was set to be 2.5\% higher than the districting plan with the worst compactness score. (More details about the compactness metrics used can be found in the associated master's thesis.)

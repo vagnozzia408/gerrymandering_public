@@ -770,50 +770,58 @@ double BG_modified(double * Ashare)
 	for (int i=0; i<g_NUMDISTRICTS; i++){	// for each pair of V_Points
 		if (V_Points[i] == V_Points[i+1]){	// if we observe two consecutive V_Points
 			if(i==g_NUMDISTRICTS-1){		// if the last two points are consecutive
+				// 12-15-2021 edits
+				if(V_Points[i+1] == V_Points[i-1]){
+					return 2;
+				}
 				double m = (SV_Points[i+1]-SV_Points[i-1])/(V_Points[i+1]-V_Points[i-1]);
 				double b = SV_Points[i-1]-m*V_Points[i-1];
 				double adj_V = (SV_Points[i]-b)/m;
 				//assert(adj_V > V_Points[i-1] && adj_V < V_Points[i+1]);
 				// 11-23-2021 edit: if we hit more than 2 consecutive points, just don't count this measure on this map
-				if(adj_V == V_Points[i-1] || adj_V == V_Points[i+1])
-					return 2;
+				//if(adj_V == V_Points[i-1] || adj_V == V_Points[i+1])
+				//	return 2;
 				V_Points[i] = adj_V;	// Replace the first consecutive point with this adjusted point.
 				// 2021-12-05: Check the replaced V_Point
-				if(isnan(V_Points[i])){
-					cerr << "First Branch Fails (Line 783)" << endl;
-					cerr << "V_Points[" << i-1 << "]=" << setprecision(20) << V_Points[i-1] << endl;
-					cerr << "V_Points[" << i << "]=" << setprecision(20) << V_Points[i] << endl;
-					cerr << "V_Points[" << i+1 << "]=" << setprecision(20) << V_Points[i+1] << endl;
-					cerr << "m=" << setprecision(20) << m << endl;
-					cerr << "b=" << setprecision(20) << b << endl;
-					cerr << "SV_Points[" << i-1 << "]=" << setprecision(20) << SV_Points[i-1] << endl;
-					cerr << "SV_Points[" << i << "]=" << setprecision(20) << SV_Points[i] << endl;
-					cerr << "SV_Points[" << i+1 << "]=" << setprecision(20) << SV_Points[i+1] << endl;
-					exit(-1);
-				}
+				//if(isnan(V_Points[i])){
+				//	cerr << "First Branch Fails (Line 783)" << endl;
+				//	cerr << "V_Points[" << i-1 << "]=" << setprecision(20) << V_Points[i-1] << endl;
+				//	cerr << "V_Points[" << i << "]=" << setprecision(20) << V_Points[i] << endl;
+				//	cerr << "V_Points[" << i+1 << "]=" << setprecision(20) << V_Points[i+1] << endl;
+				//	cerr << "m=" << setprecision(20) << m << endl;
+				//	cerr << "b=" << setprecision(20) << b << endl;
+				//	cerr << "SV_Points[" << i-1 << "]=" << setprecision(20) << SV_Points[i-1] << endl;
+				//	cerr << "SV_Points[" << i << "]=" << setprecision(20) << SV_Points[i] << endl;
+				//	cerr << "SV_Points[" << i+1 << "]=" << setprecision(20) << SV_Points[i+1] << endl;
+				//	exit(-1);
+				//}
 			}
 			else{	// if the two consecutive points are NOT the last two
+				// 12-15-2021 edits
+				if(V_Points[i]==V_Points[i+2]){
+					return 2;
+				}
 				double m = (SV_Points[i+2]-SV_Points[i])/(V_Points[i+2]-V_Points[i]);
 				double b = SV_Points[i]-m*V_Points[i];
 				double adj_V = (SV_Points[i+1]-b)/m;
 				//assert(adj_V > V_Points[i] && adj_V < V_Points[i+2]);
 				// 11-23-2021 edit: if we hit more than 2 consecutive points, just don't count this measure on this map
-				if(adj_V == V_Points[i] || adj_V == V_Points[i+2])
-					return 2;
+				//if(adj_V == V_Points[i] || adj_V == V_Points[i+2])
+				//	return 2;
 				V_Points[i+1] = adj_V;	// Replace the second consecutive point with this adjusted point.
 				// 2021-12-05: Check the replaced V_Point
-				if(isnan(V_Points[i+1])){
-					cerr << "Second Branch Fails (Line 806)" << endl;
-					cerr << "V_Points[" << i << "]=" << setprecision(20) << V_Points[i] << endl;
-					cerr << "V_Points[" << i+1 << "]=" << setprecision(20) << V_Points[i+1] << endl;
-					cerr << "V_Points[" << i+2 << "]=" << setprecision(20) << V_Points[i+2] << endl;
-					cerr << "m=" << setprecision(20) << m << endl;
-					cerr << "b=" << setprecision(20) << b << endl;
-					cerr << "SV_Points[" << i << "]=" << setprecision(20) << SV_Points[i] << endl;
-					cerr << "SV_Points[" << i+1 << "]=" << setprecision(20) << SV_Points[i+1] << endl;
-					cerr << "SV_Points[" << i+2 << "]=" << setprecision(20) << SV_Points[i+2] << endl;
-					exit(-1);
-				}
+				//if(isnan(V_Points[i+1])){
+				//	cerr << "Second Branch Fails (Line 806)" << endl;
+				//	cerr << "V_Points[" << i << "]=" << setprecision(20) << V_Points[i] << endl;
+				//	cerr << "V_Points[" << i+1 << "]=" << setprecision(20) << V_Points[i+1] << endl;
+				//	cerr << "V_Points[" << i+2 << "]=" << setprecision(20) << V_Points[i+2] << endl;
+				//	cerr << "m=" << setprecision(20) << m << endl;
+				//	cerr << "b=" << setprecision(20) << b << endl;
+				//	cerr << "SV_Points[" << i << "]=" << setprecision(20) << SV_Points[i] << endl;
+				//	cerr << "SV_Points[" << i+1 << "]=" << setprecision(20) << SV_Points[i+1] << endl;
+				//	cerr << "SV_Points[" << i+2 << "]=" << setprecision(20) << SV_Points[i+2] << endl;
+				//	exit(-1);
+				//}
 			}
 		}
 		// otherwise do nothing - all the V_Points are fine.
