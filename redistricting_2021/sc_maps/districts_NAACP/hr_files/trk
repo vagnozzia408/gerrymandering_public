@@ -1,0 +1,1 @@
+(function(){var i=document.createElement("img");i.setAttribute("role","presentation");i.setAttribute("aria","hidden");i.setAttribute("alt","");i.style.display="none";i.src="//di.rlcdn.com/700272.gif?pdata=cat%3DHealth%20and%20Fitness%2Csubcat%3DHealth%20and%20Fitness-Healthcare";document.body.appendChild(i);})();
