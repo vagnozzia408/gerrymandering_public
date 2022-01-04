@@ -18,9 +18,9 @@ infile1 = io.open(sys.argv[1],newline='')
 reader1 = csv.reader(infile1)
 header1 = next(reader1)
 
-# Read in PSN, unshared, area, pop, voteA, voteB, CongDrft3H, county
+# Read in PSN, unshared, area, pop, voteA, voteB, HouseNAACP, county
 # TO DO: Edit column numbers appropriately based on map data.
-map_data = [[eval(row[0]),eval(row[1]),eval(row[2]),eval(row[3]),eval(row[4]),eval(row[5]),eval(row[15]),row[19]] for row in reader1]
+map_data = [[eval(row[0]),eval(row[1]),eval(row[2]),eval(row[3]),eval(row[4]),eval(row[5]),eval(row[19]),row[20]] for row in reader1]
 infile1.close()
 
 # Load the neighbor data CSV.

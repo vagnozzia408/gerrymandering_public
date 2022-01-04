@@ -1,0 +1,10 @@
+PSN		NAME					ORIG	NEW
+1288	Mt. Vernon				105		57
+1592	MARION					60		57
+762		PALMETTO				59		62
+1845	Meadowfield				70		75
+1800	Brandon 1				70		75
+1799	Bookman					80		78
+979		MURRELL'S INLET NO. 3	101		108
+572		St. Andrews 27			119		116
+442		Deer Park 1A			117		113
